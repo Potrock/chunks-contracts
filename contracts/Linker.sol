@@ -3,8 +3,12 @@ pragma solidity ^0.8.4;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/metatx/ERC2771Context.sol";
+import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
-contract Linker is Ownable, ERC2771Context {
+//NEED ERC2771CONTEXT IMPLEMENTATION!
+contract Linker is Ownable {
+    using ECDSA for bytes32;
+
     address private approvedSigner;
     mapping(address => mapping(uint16 => string)) uuidByPlatformByPlayer;
     mapping(uint16 => mapping(string => address)) walletByUuidByPlatform;
@@ -15,7 +19,7 @@ contract Linker is Ownable, ERC2771Context {
 
     event PlayerLinked(uint16 _platform, string _uuid, address _address);
 
-    constructor(address _forwarder) ERC2771Context(_forwarder) {
+    constructor() {
         approvedSigner = _msgSender();
     }
 
@@ -28,7 +32,7 @@ contract Linker is Ownable, ERC2771Context {
         return walletByUuidByPlatform[_platform][lowercaseUuid];
     }
 
-    function getUuidByPlatformByPlayer(address _address, uint16 _platform) external view returns (string) {
+    function getUuidByPlatformByPlayer(address _address, uint16 _platform) external view returns (string memory) {
         return uuidByPlatformByPlayer[_address][_platform];
     }
 
@@ -50,23 +54,23 @@ contract Linker is Ownable, ERC2771Context {
     * Overrides
     */
 
-    function _msgData()
-        internal
-        view
-        override(Context, ERC2771Context)
-        returns (bytes calldata)
-    {
-        return super._msgData();
-    }
+    // function _msgData()
+    //     internal
+    //     view
+    //     override(Context, ERC2771Context)
+    //     returns (bytes calldata)
+    // {
+    //     return super._msgData();
+    // }
 
-    function _msgSender()
-        internal
-        view
-        override(Context, ERC2771Context)
-        returns (address)
-    {
-        return super._msgSender();
-    }
+    // function _msgSender()
+    //     internal
+    //     view
+    //     override(Context, ERC2771Context)
+    //     returns (address)
+    // {
+    //     return super._msgSender();
+    // }
 
     /**
      * Utils
