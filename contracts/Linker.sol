@@ -10,16 +10,17 @@ contract Linker is Ownable {
     using ECDSA for bytes32;
 
     address public approvedSigner;
-    mapping(address => mapping(uint256 => string)) uuidByPlatformByPlayer;
-    mapping(uint256 => mapping(string => address)) walletByUuidByPlatform;
+    mapping(address => mapping(string => string)) uuidByPlatformByPlayer;
+    mapping(string => mapping(string => address)) walletByUuidByPlatform;
+    mapping (address => bytes32) public addressToKeccak;
 
     /**
     * Events
     */
 
-    event PlayerLinked(uint256 _platform, string _uuid, address _address);
+    event PlayerLinked(string _platform, string _uuid, address _address);
 
-    constructor() {
+    constructor()  {
         approvedSigner = msg.sender;
     }
 
@@ -27,12 +28,12 @@ contract Linker is Ownable {
      * Reads
      */
 
-    function getAddressByUuidByPlatform(string calldata _uuid, uint256 _platform) external view returns (address) {
+    function getAddressByUuidByPlatform(string calldata _uuid, string calldata _platform) external view returns (address) {
         string memory lowercaseUuid = _stringToLower(_uuid);
         return walletByUuidByPlatform[_platform][lowercaseUuid];
     }
 
-    function getUuidByPlatformByPlayer(address _address, uint256 _platform) external view returns (string memory) {
+    function getUuidByPlatformByPlayer(address _address, string calldata _platform) external view returns (string memory) {
         return uuidByPlatformByPlayer[_address][_platform];
     }
 
@@ -40,14 +41,22 @@ contract Linker is Ownable {
     * Writes
     */
 
-    function linkPlayerToUuidByPlatform(string calldata _uuid, uint256 _platform, bytes calldata _signature) public {
+    function linkPlayerToUuidByPlatform(string calldata _uuid, string calldata _platform, bytes calldata _signature) public {
         string memory lowercaseUuid = _stringToLower(_uuid);
-        require(_verifyPrimarySignerSignature(keccak256(abi.encode(msg.sender, lowercaseUuid, _platform)), _signature), "Invalid Approval Signature");
+        require(_verifyApprovedSigner(keccak256(abi.encode(msg.sender, lowercaseUuid, _platform)), _signature), "Invalid Approval Signature");
         
         uuidByPlatformByPlayer[msg.sender][_platform] = lowercaseUuid;
         walletByUuidByPlatform[_platform][lowercaseUuid] = msg.sender;
 
         emit PlayerLinked(_platform, lowercaseUuid, msg.sender);
+    }
+
+    function getEncodeParameters(string calldata _uuid, string calldata _platform) external view returns (bytes memory) {
+        return abi.encode(msg.sender, _uuid, _platform);
+    }
+    function testSig(string calldata _uuid, string calldata _platform) public {
+        bytes32 keccak = keccak256(abi.encode(msg.sender, _stringToLower(_uuid), _platform));
+        addressToKeccak[msg.sender] = keccak;
     }
 
     /**
@@ -63,13 +72,13 @@ contract Linker is Ownable {
     //     return super._msgData();
     // }
 
-    // function _msgSender()
+    // function msg.sender
     //     internal
     //     view
     //     override(Context, ERC2771Context)
     //     returns (address)
     // {
-    //     return super._msgSender();
+    //     return super.msg.sender;
     // }
 
     /**
@@ -83,7 +92,7 @@ contract Linker is Ownable {
     {
         bytes memory _baseBytes = bytes(_base);
 
-        for (uint256 i = 0; i < _baseBytes.length; i++) {
+        for (uint16 i = 0; i < _baseBytes.length; i++) {
             _baseBytes[i] = (_baseBytes[i] >= 0x41 && _baseBytes[i] <= 0x5A)
                 ? bytes1(uint8(_baseBytes[i]) + 32)
                 : _baseBytes[i];
@@ -105,7 +114,7 @@ contract Linker is Ownable {
      * Security
      */
 
-    function _verifyPrimarySignerSignature(
+    function _verifyApprovedSigner(
         bytes32 hash,
         bytes calldata signature
     ) internal view returns (bool) {
