@@ -9,15 +9,15 @@ import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 contract Linker is Ownable {
     using ECDSA for bytes32;
 
-    address private approvedSigner;
-    mapping(address => mapping(uint16 => string)) uuidByPlatformByPlayer;
-    mapping(uint16 => mapping(string => address)) walletByUuidByPlatform;
+    address public approvedSigner;
+    mapping(address => mapping(uint256 => string)) uuidByPlatformByPlayer;
+    mapping(uint256 => mapping(string => address)) walletByUuidByPlatform;
 
     /**
     * Events
     */
 
-    event PlayerLinked(uint16 _platform, string _uuid, address _address);
+    event PlayerLinked(uint256 _platform, string _uuid, address _address);
 
     constructor() {
         approvedSigner = msg.sender;
@@ -27,12 +27,12 @@ contract Linker is Ownable {
      * Reads
      */
 
-    function getAddressByUuidByPlatform(string calldata _uuid, uint16 _platform) external view returns (address) {
+    function getAddressByUuidByPlatform(string calldata _uuid, uint256 _platform) external view returns (address) {
         string memory lowercaseUuid = _stringToLower(_uuid);
         return walletByUuidByPlatform[_platform][lowercaseUuid];
     }
 
-    function getUuidByPlatformByPlayer(address _address, uint16 _platform) external view returns (string memory) {
+    function getUuidByPlatformByPlayer(address _address, uint256 _platform) external view returns (string memory) {
         return uuidByPlatformByPlayer[_address][_platform];
     }
 
@@ -40,7 +40,7 @@ contract Linker is Ownable {
     * Writes
     */
 
-    function linkPlayerToUuidByPlatform(string calldata _uuid, uint16 _platform, bytes calldata _signature) public {
+    function linkPlayerToUuidByPlatform(string calldata _uuid, uint256 _platform, bytes calldata _signature) public {
         string memory lowercaseUuid = _stringToLower(_uuid);
         require(_verifyPrimarySignerSignature(keccak256(abi.encode(msg.sender, lowercaseUuid, _platform)), _signature), "Invalid Approval Signature");
         
