@@ -20,7 +20,7 @@ contract Linker is Ownable {
     event PlayerLinked(uint16 _platform, string _uuid, address _address);
 
     constructor() {
-        approvedSigner = _msgSender();
+        approvedSigner = msg.sender;
     }
 
     /**
@@ -42,12 +42,12 @@ contract Linker is Ownable {
 
     function linkPlayerToUuidByPlatform(string calldata _uuid, uint16 _platform, bytes calldata _signature) public {
         string memory lowercaseUuid = _stringToLower(_uuid);
-        require(_verifyPrimarySignerSignature(keccak256(abi.encode(_msgSender(), lowercaseUuid, _platform)), _signature), "Invalid Approval Signature");
+        require(_verifyPrimarySignerSignature(keccak256(abi.encode(msg.sender, lowercaseUuid, _platform)), _signature), "Invalid Approval Signature");
         
-        uuidByPlatformByPlayer[_msgSender()][_platform] = lowercaseUuid;
-        walletByUuidByPlatform[_platform][lowercaseUuid] = _msgSender();
+        uuidByPlatformByPlayer[msg.sender][_platform] = lowercaseUuid;
+        walletByUuidByPlatform[_platform][lowercaseUuid] = msg.sender;
 
-        emit PlayerLinked(_platform, lowercaseUuid, _msgSender());
+        emit PlayerLinked(_platform, lowercaseUuid, msg.sender);
     }
 
     /**
